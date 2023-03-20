@@ -1,21 +1,37 @@
-import { useShoppingCart } from 'use-shopping-cart';
+import { useState, useEffect } from 'react'
+import { useShoppingCart } from 'use-shopping-cart'
+import { loadStripe } from '@stripe/stripe-js'
 
-export default function Cart() {
-  const { cartDetails } = useShoppingCart();
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+
+const Cart = () => {
+  const { cartDetails, redirectToCheckout } = useShoppingCart()
+  const [stripe, setStripe] = useState(null)
+
+  useEffect(() => {
+    if (stripe === null) {
+      setStripe(stripePromise)
+    }
+  }, [])
 
   return (
     <div>
       <h1>Cart</h1>
-      {Object.keys(cartDetails).length === 0 && <p>Your cart is empty.</p>}
-      {Object.keys(cartDetails).length > 0 && (
-        <ul>
-          {Object.keys(cartDetails).map((cartItemId) => (
-            <li key={cartItemId}>
-              {cartDetails[cartItemId].name} - {cartDetails[cartItemId].quantity} x {cartDetails[cartItemId].formattedValue}
-            </li>
-          ))}
-        </ul>
-      )}
+      {Object.keys(cartDetails).map((sku) => {
+        const { name, price, quantity, image } = cartDetails[sku]
+        return (
+          <div key={sku}>
+            <img src={image} alt={name} width="100" />
+            <div>{name}</div>
+            <div>{price} x {quantity}</div>
+          </div>
+        )
+      })}
+      <button onClick={() => redirectToCheckout({ sessionId: 'checkout-session-id' })}>
+        Checkout
+      </button>
     </div>
-  );
+  )
 }
+
+export default Cart
